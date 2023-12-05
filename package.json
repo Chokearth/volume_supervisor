@@ -1,0 +1,21 @@
+{
+  "name": "volume_supervisor",
+  "version": "0.1.0",
+  "description": "Library to control system and app volume individualy",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "/dist"
+  ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "volume",
+    "windows",
+    "linux",
+    "audio"
+  ],
+  "author": "Chokearth",
+  "license": "MIT"
+}
