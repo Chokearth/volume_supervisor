@@ -5,7 +5,12 @@
     "sourceMap": true,
     "outDir": "./dist",
     "noImplicitAny": true,
-    "declaration": true
+    "declaration": true,
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    }
   },
   "include": [
     "src/**/*",

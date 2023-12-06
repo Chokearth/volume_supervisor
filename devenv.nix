@@ -4,6 +4,7 @@
   packages = with pkgs; [ 
     git
     nodePackages.pnpm
+    alsa-utils
   ];
 
   enterShell = ''
