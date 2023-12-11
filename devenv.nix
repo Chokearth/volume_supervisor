@@ -11,6 +11,7 @@
     pnpm i
     clear
     pfetch
+    pulseaudio
   '';
 
   languages.javascript.enable = true;

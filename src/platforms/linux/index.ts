@@ -1,17 +1,16 @@
-import { execCommand } from '@/utils/commands';
 import * as child_process from 'child_process';
 import { PlatformImplementation } from '@/types';
+import { linuxWireplumber } from '@/platforms/linux/wireplumber';
 import { linuxAmixer } from '@/platforms/linux/amixer';
-import { linuxPactl } from '@/platforms/linux/pactl';
 
-let pactlCompatible: boolean;
+let wpctlCompatible: boolean;
 try {
-  const stdout = child_process.execSync('command -v pactl 2>/dev/null' +
-              ' && { echo >&1 pactl; exit 0; }').toString();
-  pactlCompatible = !!stdout;
+  const stdout = child_process.execSync('command -v wpctl 2>/dev/null' +
+    ' && { echo >&1 wpctl; exit 0; }').toString();
+  wpctlCompatible = !!stdout;
 } catch (e) {
-  pactlCompatible = false;
+  wpctlCompatible = false;
 }
 
-export const linux: PlatformImplementation = pactlCompatible ? linuxPactl : linuxAmixer;
+export const linux: PlatformImplementation = wpctlCompatible ? linuxWireplumber : linuxAmixer;
 

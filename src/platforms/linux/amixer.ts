@@ -1,7 +1,17 @@
 import { PlatformImplementation } from '@/types';
 import { execCommand } from '@/utils/commands';
+import { throwCompatibilityError } from '@/utils/errors';
 
 export const linuxAmixer: PlatformImplementation = {
+  getPlatformCompatibility: () => ({
+    status: false,
+    listStreams: false,
+    listSinks: false,
+    listSources: false,
+    setStreamVolume: false,
+    setSinkVolume: false,
+    setSourceVolume: false,
+  }),
   async getGlobalVolume() {
 
     const stdout = await execCommand('amixer', ['sget', 'Master']);
@@ -32,4 +42,8 @@ export const linuxAmixer: PlatformImplementation = {
   async setMuted(muted: boolean) {
     await execCommand('amixer', ['set', 'Master', muted ? 'mute' : 'unmute']);
   },
+  getStatus: throwCompatibilityError,
+  getNodeVolumeInfoById: throwCompatibilityError,
+  setNodeVolumeById: throwCompatibilityError,
+  setNodeMutedById: throwCompatibilityError,
 };
