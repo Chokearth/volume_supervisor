@@ -177,10 +177,10 @@ export const linuxWireplumber: PlatformImplementation = {
   async setGlobalVolume(volume: number) {
     await setNodeVolumeById('@DEFAULT_AUDIO_SINK@', volume);
   },
-  async isMuted() {
+  async isGlobalMuted() {
     return getNodeVolumeInfoById('@DEFAULT_AUDIO_SINK@').then((volumeInfo) => volumeInfo.muted);
   },
-  async setMuted(muted: boolean) {
+  async setGlobalMuted(muted: boolean) {
     await setNodeMutedById('@DEFAULT_AUDIO_SINK@', muted);
   },
   getStatus,
