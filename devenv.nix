@@ -5,13 +5,13 @@
     git
     nodePackages.pnpm
     alsa-utils
+    pulseaudio
   ];
 
   enterShell = ''
     pnpm i
     clear
     pfetch
-    pulseaudio
   '';
 
   languages.javascript.enable = true;
