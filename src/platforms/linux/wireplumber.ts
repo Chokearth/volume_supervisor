@@ -158,7 +158,7 @@ async function setNodeVolumeById(id: string, volume: number) {
 }
 
 async function setNodeMutedById(id: string, muted: boolean) {
-  await execCommand('wpctl', ['set-volume', id, muted ? '1' : '0']);
+  await execCommand('wpctl', ['set-mute', id, muted ? '1' : '0']);
 }
 
 export const linuxWireplumber: PlatformImplementation = {
@@ -177,7 +177,7 @@ export const linuxWireplumber: PlatformImplementation = {
   async setGlobalVolume(volume: number) {
     await setNodeVolumeById('@DEFAULT_AUDIO_SINK@', volume);
   },
-  isMuted: async function () {
+  async isMuted() {
     return getNodeVolumeInfoById('@DEFAULT_AUDIO_SINK@').then((volumeInfo) => volumeInfo.muted);
   },
   async setMuted(muted: boolean) {

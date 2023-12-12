@@ -14,7 +14,4 @@ switch (osType) {
     throw new Error('Unsupported OS found: ' + osType);
 }
 
-console.log('OS type: ' + osType);
-platformImplementation.getGlobalVolume().then((volume) => {
-  console.log('Volume: ' + volume);
-});
+export const volumeControl = platformImplementation;
