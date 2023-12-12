@@ -1,7 +1,7 @@
 {
   "name": "volume_supervisor",
   "version": "0.1.0",
-  "description": "Library to control system and app volume individualy",
+  "description": "Library to control system and app volume",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
