@@ -80,11 +80,11 @@ volumeControl.getStatus().then(async status => {
   console.log(`Stream name: ${stream.name}`); // e.g. 'Firefox'
 
   // Get the stream's volume
-  const volume = await volumeControl.getVolume(stream.id);
+  const volume = (await volumeControl.getNodeVolumeInfoById(stream.id)).volume;
   console.log(`Stream volume: ${volume}`); // e.g. 50
 
   // Increase the stream's volume by 10%
-  await volumeControl.setVolume(stream.id, volume + 10);
+  await volumeControl.setNodeVolumeById(stream.id, volume + 10);
 });
 ```
 
