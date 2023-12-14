@@ -1,8 +1,8 @@
 export type GetPlatformCompatibility = () => PlatformCompatibility;
 export type GetGlobalVolume = () => Promise<number>;
 export type SetGlobalVolume = (volume: number) => Promise<void>;
-export type IsMuted = () => Promise<boolean>;
-export type SetMuted = (muted: boolean) => Promise<void>;
+export type IsGlobalMuted = () => Promise<boolean>;
+export type SetGlobalMuted = (muted: boolean) => Promise<void>;
 export type GetStatus = () => Promise<Status>;
 export type GetNodeVolumeInfoById = (id: string) => Promise<VolumeInfo>;
 export type SetNodeVolumeById = (id: string, volume: number) => Promise<void>;
@@ -29,13 +29,13 @@ export interface PlatformImplementation {
    * Get the mute state of the system.
    * @returns {Promise<boolean>} A promise that resolves to true if the system is muted, false otherwise.
    */
-  isMuted: IsMuted;
+  isGlobalMuted: IsGlobalMuted;
   /**
    * Set the mute state of the system.
    * @param {boolean} muted The mute state to set.
    * @returns {Promise<void>} A promise that resolves when the mute state has been set.
    */
-  setMuted: SetMuted;
+  setGlobalMuted: SetGlobalMuted;
   /**
    * Get the status of the system.
    * @returns {Promise<Status>} A promise that resolves to the status of the system.

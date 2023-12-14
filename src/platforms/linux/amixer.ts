@@ -31,7 +31,7 @@ export const linuxAmixer: PlatformImplementation = {
 
     await execCommand('amixer', ['set', 'Master', `${volume}%`]);
   },
-  isMuted: async function () {
+  isGlobalMuted: async function () {
     const stdout = await execCommand('amixer', ['sget', 'Master']);
     if (!stdout) throw new Error('Failed to get mute state');
 
@@ -39,7 +39,7 @@ export const linuxAmixer: PlatformImplementation = {
       .match(/\[(on|off)\]/)
       .some((state) => state === 'off');
   },
-  async setMuted(muted: boolean) {
+  async setGlobalMuted(muted: boolean) {
     await execCommand('amixer', ['set', 'Master', muted ? 'mute' : 'unmute']);
   },
   getStatus: throwCompatibilityError,

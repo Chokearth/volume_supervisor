@@ -1,16 +1,24 @@
 import * as child_process from 'child_process';
 import { PlatformImplementation } from '@/types';
 import { linuxWireplumber } from '@/platforms/linux/wireplumber';
+import { linuxPulseAudio } from '@/platforms/linux/pulseaudio';
 import { linuxAmixer } from '@/platforms/linux/amixer';
 
-let wpctlCompatible: boolean;
-try {
-  const stdout = child_process.execSync('command -v wpctl 2>/dev/null' +
-    ' && { echo >&1 wpctl; exit 0; }').toString();
-  wpctlCompatible = !!stdout;
-} catch (e) {
-  wpctlCompatible = false;
+function testCommand(command: string): boolean {
+  try {
+    child_process.execSync(`command -v ${command} 2>/dev/null` +
+      ' && { echo >&1 wpctl; exit 0; }').toString();
+    return true;
+  } catch (e) {
+    return false;
+  }
 }
 
-export const linux: PlatformImplementation = wpctlCompatible ? linuxWireplumber : linuxAmixer;
+const wpctlCompatible = false; // testCommand('wpctl'); TODO To implement pactl, change before merge
+const pactlCompatible = testCommand('pactl');
+
+export const linux: PlatformImplementation =
+  wpctlCompatible ? linuxWireplumber :
+    pactlCompatible ? linuxPulseAudio :
+      linuxAmixer;
 

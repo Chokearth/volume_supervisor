@@ -6,16 +6,16 @@ describe('Basic volume test', () => {
 
   beforeAll(async () => {
     oldVolume = await volumeControl.getGlobalVolume();
-    oldMuted = await volumeControl.isMuted();
+    oldMuted = await volumeControl.isGlobalMuted();
   });
 
   beforeEach(async () => {
-    await volumeControl.setGlobalVolume(0);
-    await volumeControl.setMuted(false);
+    await volumeControl.setGlobalVolume(10);
+    await volumeControl.setGlobalMuted(true);
   });
 
   it('should get volume', async () => {
-    expect(await volumeControl.getGlobalVolume()).toBe(0);
+    expect(await volumeControl.getGlobalVolume()).toBe(10);
   });
 
   it('should set volume', async () => {
@@ -24,18 +24,18 @@ describe('Basic volume test', () => {
   });
 
   it('should get muted', async () => {
-    expect(await volumeControl.isMuted()).toBe(false);
+    expect(await volumeControl.isGlobalMuted()).toBe(true);
   });
 
   it('should set muted', async () => {
-    await volumeControl.setMuted(true);
-    expect(await volumeControl.isMuted()).toBe(true);
-    await volumeControl.setMuted(false);
-    expect(await volumeControl.isMuted()).toBe(false);
+    await volumeControl.setGlobalMuted(false);
+    expect(await volumeControl.isGlobalMuted()).toBe(false);
+    await volumeControl.setGlobalMuted(true);
+    expect(await volumeControl.isGlobalMuted()).toBe(true);
   });
 
   afterAll(async () => {
     await volumeControl.setGlobalVolume(oldVolume);
-    await volumeControl.setMuted(oldMuted);
+    await volumeControl.setGlobalMuted(oldMuted);
   });
 });

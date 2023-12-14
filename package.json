@@ -10,7 +10,8 @@
   "scripts": {
     "build": "tsc && tsc-alias",
     "dev": "ts-node -r tsconfig-paths/register src/index.ts",
-    "test": "jest --config src/jest.config.js --runInBand"
+    "test": "jest --config src/jest.config.js --runInBand",
+    "coverage": "jest --config src/jest.config.js --coverage --runInBand"
   },
   "keywords": [
     "volume",
