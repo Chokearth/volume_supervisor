@@ -8,13 +8,13 @@ describe('Volume status test', () => {
   beforeAll(async () => {
     if (!doTest) return;
     oldVolume = await volumeControl.getGlobalVolume();
-    oldMuted = await volumeControl.isMuted();
+    oldMuted = await volumeControl.isGlobalMuted();
   });
 
   beforeEach(async () => {
     if (!doTest) return;
     await volumeControl.setGlobalVolume(0);
-    await volumeControl.setMuted(false);
+    await volumeControl.setGlobalMuted(false);
   });
 
   it('should get default sink status', async () => {
@@ -26,7 +26,7 @@ describe('Volume status test', () => {
     expect(defaultSink?.muted).toBe(false);
 
     await volumeControl.setGlobalVolume(77);
-    await volumeControl.setMuted(true);
+    await volumeControl.setGlobalMuted(true);
     const statusAfter = await volumeControl.getStatus();
     const defaultSinkAfter = await statusAfter.sinks.find(sink => sink.isDefault);
     expect(defaultSinkAfter).toBeDefined();
@@ -46,6 +46,6 @@ describe('Volume status test', () => {
   afterAll(async () => {
     if (!doTest) return;
     await volumeControl.setGlobalVolume(oldVolume);
-    await volumeControl.setMuted(oldMuted);
+    await volumeControl.setGlobalMuted(oldMuted);
   });
 });

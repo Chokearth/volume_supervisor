@@ -6,11 +6,11 @@ describe('Volume status test', () => {
   const doTestStatus = volumeControl.getPlatformCompatibility().status;
 
   beforeAll(async () => {
-    oldMuted = await volumeControl.isMuted();
+    oldMuted = await volumeControl.isGlobalMuted();
   });
 
   beforeEach(async () => {
-    await volumeControl.setMuted(true);
+    await volumeControl.setGlobalMuted(true);
   });
 
   async function testControlOnNode(node: Node) {
@@ -63,6 +63,6 @@ describe('Volume status test', () => {
   });
 
   afterAll(async () => {
-    await volumeControl.setMuted(oldMuted);
+    await volumeControl.setGlobalMuted(oldMuted);
   });
 });
