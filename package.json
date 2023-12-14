@@ -10,7 +10,7 @@
   "scripts": {
     "build": "tsc && tsc-alias",
     "dev": "ts-node -r tsconfig-paths/register src/index.ts",
-    "test": "jest --config src/jest.config.js"
+    "test": "jest --config src/jest.config.js --runInBand"
   },
   "keywords": [
     "volume",
@@ -20,6 +20,10 @@
   ],
   "author": "Chokearth",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Chokearth/volume_supervisor.git"
+  },
   "devDependencies": {
     "@babel/core": "^7.23.5",
     "@babel/preset-env": "^7.23.5",

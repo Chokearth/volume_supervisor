@@ -3,6 +3,8 @@
 Volume Supervisor is a Node.js library that allows you to control system and application volume. It provides a simple and intuitive API to get and set the global volume, mute and unmute the system, and get the status of the system.
 The project is inspired by [easy-volume](https://github.com/Arciiix/easy-volume) by [Arciiix](https://github.com/Arciiix).
 
+This is in a really early stage of development, so expect bugs and missing features. The API is also subject to consequential changes.
+
 ## Installation
 
 You can install Volume Supervisor using npm:
