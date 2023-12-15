@@ -15,9 +15,12 @@
   },
   "keywords": [
     "volume",
-    "windows",
     "linux",
-    "audio"
+    "audio",
+    "wireplumber",
+    "pulseaudio",
+    "amixer",
+    "alsa"
   ],
   "author": "Chokearth",
   "license": "MIT",

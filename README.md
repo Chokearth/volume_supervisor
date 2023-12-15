@@ -21,7 +21,7 @@ Currently, Volume Supervisor only supports Linux. However, support for Windows i
 
 ### Linux Compatibility
 
-The compatibility of features depends on whether `amixer`, `wireplumber` or `wireplumber` is installed on your Linux system. Here is a table that outlines the compatibility:
+The compatibility of features depends on whether `amixer`, `wireplumber` or `pulseaudio` is installed on your Linux system. Here is a table that outlines the compatibility:
 
 | Feature                | amixer | wireplumber | pulseaudio |
 |------------------------|--------|-------------|------------|
