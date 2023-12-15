@@ -6,9 +6,10 @@ import {
   StreamStatus,
   VolumeInfo,
   VsNode,
-  VsNodeTypes,
+  VsNodeTypes, VsStreamNode,
 } from '@/types';
 import { execCommand } from '@/utils/commands';
+import { throwCompatibilityError } from '@/utils/errors';
 
 const DEFAULT_SINK_NAME = '@DEFAULT_SINK@';
 const DEFAULT_SOURCE_NAME = '@DEFAULT_SOURCE@';
@@ -218,7 +219,7 @@ async function getStreamStatus(): Promise<StreamStatus> {
   if (!stdout) return { streams: [] };
 
   const obj = exportStatusOutput(stdout);
-  const streams: VsNode[] = Object.keys(obj).map((key) => {
+  const streams: VsStreamNode[] = Object.keys(obj).map((key) => {
     const properties = obj[key];
     const name = properties['application.name'];
     const volume = extractVolume(properties['Volume']);
@@ -287,6 +288,8 @@ export const linuxPulseAudio: PlatformImplementation = {
     setStreamVolume: true,
     setSinkVolume: true,
     setSourceVolume: true,
+    getStreamDestination: false,
+    setStreamDestination: false,
   }),
   async getGlobalVolume() {
     return getTypeVolumeById('sink', DEFAULT_SINK_NAME);
@@ -322,4 +325,5 @@ export const linuxPulseAudio: PlatformImplementation = {
 
     await setTypeMuteById(type, id, muted);
   },
+  setStreamDestination: throwCompatibilityError,
 };
