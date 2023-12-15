@@ -1,5 +1,5 @@
 import { volumeControl } from '@/index';
-import { Node } from '@/types';
+import { VsNode } from '@/types';
 
 describe('Volume status test', () => {
   let oldMuted: boolean = false;
@@ -13,7 +13,7 @@ describe('Volume status test', () => {
     await volumeControl.setGlobalMuted(true);
   });
 
-  async function testControlOnNode(node: Node) {
+  async function testControlOnNode(node: VsNode) {
     const oldVolume = node.volume;
     const oldMuted = node.muted;
     expect((await volumeControl.getNodeVolumeInfoById(node.id)).volume).toBe(oldVolume);

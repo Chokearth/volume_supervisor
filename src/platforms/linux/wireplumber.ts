@@ -1,10 +1,10 @@
-import { Node, NodeTypes, PlatformImplementation, Status, VolumeInfo } from '@/types';
+import { VsNode, VsNodeTypes, PlatformImplementation, Status, VolumeInfo } from '@/types';
 import { execCommand } from '@/utils/commands';
 
 const SUB_SECTION_TO_EXTRACT: {
   name: string;
   attribute: keyof Status;
-  type: Node['type'];
+  type: VsNode['type'];
   defaultAttribute: keyof Status;
 }[] = [
   { name: 'Sinks', attribute: 'sinks', type: 'sink', defaultAttribute: 'defaultSink' },
@@ -12,8 +12,8 @@ const SUB_SECTION_TO_EXTRACT: {
   { name: 'Streams', attribute: 'streams', type: 'stream', defaultAttribute: undefined },
 ];
 
-function exportSinksOrSources(lines: string[], type: NodeTypes) {
-  const nodes: Node[] = [];
+function exportSinksOrSources(lines: string[], type: VsNodeTypes) {
+  const nodes: VsNode[] = [];
 
   for (const line of lines) {
     const match = line.match(/(\*?)\s+(\d+)\.\s+(.+)\s+\[vol: ([\d\.]+) ?(MUTED)?\]/);
@@ -39,7 +39,7 @@ function exportSinksOrSources(lines: string[], type: NodeTypes) {
 }
 
 function exportStreams(lines: string[]) {
-  const nodes: Node[] = [];
+  const nodes: VsNode[] = [];
 
   for (const line of lines) {
     if (line.startsWith('        ')) continue;
@@ -131,13 +131,13 @@ async function getNodeVolumeInfoById(id: string): Promise<VolumeInfo> {
   };
 }
 
-async function updateStreamStatus(stream: Node) {
+async function updateStreamStatus(stream: VsNode) {
   const volumeInfo = await getNodeVolumeInfoById(stream.id.toString());
   stream.volume = volumeInfo.volume;
   stream.muted = volumeInfo.muted;
 }
 
-async function updateStreamsStatus(streams: Node[]) {
+async function updateStreamsStatus(streams: VsNode[]) {
   await Promise.all(streams.map(updateStreamStatus));
 }
 

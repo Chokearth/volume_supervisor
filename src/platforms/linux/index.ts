@@ -14,7 +14,7 @@ function testCommand(command: string): boolean {
   }
 }
 
-const wpctlCompatible = false; // testCommand('wpctl'); TODO To implement pactl, change before merge
+const wpctlCompatible = testCommand('wpctl');
 const pactlCompatible = testCommand('pactl');
 
 export const linux: PlatformImplementation =
