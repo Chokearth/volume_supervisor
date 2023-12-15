@@ -21,23 +21,23 @@ Currently, Volume Supervisor only supports Linux. However, support for Windows i
 
 ### Linux Compatibility
 
-The compatibility of features depends on whether `amixer` or `wireplumber` is installed on your Linux system. Here is a table that outlines the compatibility:
+The compatibility of features depends on whether `amixer`, `wireplumber` or `wireplumber` is installed on your Linux system. Here is a table that outlines the compatibility:
 
-| Feature                | amixer | wireplumber |
-|------------------------|--------|-------------|
-| Global volume features | Yes    | Yes |
-| Audio status           | No     | Yes |
-| List streams           | No     | Yes |
-| List sinks             | No     | Yes |
-| List sources           | No     | Yes |
-| Stream volume features | No     | Yes |
-| Sink volume features   | No     | Yes |
-| Source volume features | No     | Yes |
+| Feature                | amixer | wireplumber | pulseaudio |
+|------------------------|--------|-------------|------------|
+| Global volume features | Yes    | Yes         | Yes        |
+| Audio status           | No     | Yes         | Yes        |
+| List streams           | No     | Yes         | Yes        |
+| List sinks             | No     | Yes         | Yes        |
+| List sources           | No     | Yes         | Yes        |
+| Stream volume features | No     | Yes         | Yes        |
+| Sink volume features   | No     | Yes         | Yes        |
+| Source volume features | No     | Yes         | Yes        |
+
+Priority: `wireplumber` (`wpctl`) > `pulseaudio` (`pactl`) > `amixer`
+
 
 Volume features correspond to get/set volume and mute/unmute.
-
-By default `amixer` is used. If `wireplumber` is detected (by checking if the `wpctl` command exists), it will be used instead.
-
 
 ## Usage
 
@@ -57,7 +57,7 @@ volumeControl.setGlobalVolume(50).then(() => {
 });
 
 // Mute the system
-volumeControl.setMuted(true).then(() => {
+volumeControl.setGlobalMuted(true).then(() => {
   console.log('System has been muted');
 });
 ```
@@ -100,23 +100,30 @@ export type VolumeInfo = {
   muted: boolean;
 };
 
-export type NodeTypes = 'sink' | 'source' | 'stream';
+export type VsNodeTypes = 'sink' | 'source' | 'stream';
 
-export type Node = {
-  type: NodeTypes;
+export type VsNode = {
+  type: VsNodeTypes;
   id: string;
   name: string;
   isDefault: boolean;
 } & VolumeInfo;
 
-export type Status = {
-  sinks: Node[];
-  sources: Node[];
-  streams: Node[];
-
+export type SinkStatus = {
+  sinks: VsNode[];
   defaultSink?: string;
+};
+
+export type SourceStatus = {
+  sources: VsNode[];
   defaultSource?: string;
-}
+};
+
+export type StreamStatus = {
+  streams: VsNode[];
+};
+
+export type Status = SinkStatus & SourceStatus & StreamStatus;
 ```
 
 ## License
