@@ -18,7 +18,7 @@ const wpctlCompatible = testCommand('wpctl');
 const pactlCompatible = testCommand('pactl');
 
 export const linux: PlatformImplementation =
-  wpctlCompatible ? linuxWireplumber :
-    pactlCompatible ? linuxPulseAudio :
+  pactlCompatible ? linuxPulseAudio :
+    wpctlCompatible ? linuxWireplumber :
       linuxAmixer;
 

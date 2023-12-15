@@ -47,6 +47,8 @@ describe('Volume status test', () => {
 
     const oldDestination = stream.destinationId;
     expect(oldDestination).toBeDefined();
+    const currentSink = status.sinks.find(sink => sink.id === oldDestination);
+    expect(currentSink).toBeDefined();
 
     if (!volumeControl.getPlatformCompatibility().setStreamDestination) return;
 
