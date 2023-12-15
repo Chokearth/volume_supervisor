@@ -1,19 +1,19 @@
 import { volumeControl } from '@/index';
-import { Node } from '@/types';
+import { VsNode } from '@/types';
 
 describe('Volume status test', () => {
   let oldMuted: boolean = false;
   const doTestStatus = volumeControl.getPlatformCompatibility().status;
 
   beforeAll(async () => {
-    oldMuted = await volumeControl.isMuted();
+    oldMuted = await volumeControl.isGlobalMuted();
   });
 
   beforeEach(async () => {
-    await volumeControl.setMuted(true);
+    await volumeControl.setGlobalMuted(true);
   });
 
-  async function testControlOnNode(node: Node) {
+  async function testControlOnNode(node: VsNode) {
     const oldVolume = node.volume;
     const oldMuted = node.muted;
     expect((await volumeControl.getNodeVolumeInfoById(node.id)).volume).toBe(oldVolume);
@@ -63,6 +63,6 @@ describe('Volume status test', () => {
   });
 
   afterAll(async () => {
-    await volumeControl.setMuted(oldMuted);
+    await volumeControl.setGlobalMuted(oldMuted);
   });
 });

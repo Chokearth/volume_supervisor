@@ -78,20 +78,27 @@ export type VolumeInfo = {
   muted: boolean;
 };
 
-export type NodeTypes = 'sink' | 'source' | 'stream';
+export type VsNodeTypes = 'sink' | 'source' | 'stream';
 
-export type Node = {
-  type: NodeTypes;
+export type VsNode = {
+  type: VsNodeTypes;
   id: string;
   name: string;
   isDefault: boolean;
 } & VolumeInfo;
 
-export type Status = {
-  sinks: Node[];
-  sources: Node[];
-  streams: Node[];
-
+export type SinkStatus = {
+  sinks: VsNode[];
   defaultSink?: string;
+};
+
+export type SourceStatus = {
+  sources: VsNode[];
   defaultSource?: string;
-}
+};
+
+export type StreamStatus = {
+  streams: VsNode[];
+};
+
+export type Status = SinkStatus & SourceStatus & StreamStatus;
