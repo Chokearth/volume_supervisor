@@ -1,5 +1,6 @@
 import { volumeControl } from '@/index';
 import { VsNode } from '@/types';
+import * as stream from 'stream';
 
 describe('Volume status test', () => {
   let oldMuted: boolean = false;
@@ -39,7 +40,28 @@ describe('Volume status test', () => {
 
     expect(streams.length).toBeGreaterThan(0); // Please play some background audio before running this test
 
-    await testControlOnNode(streams[0]);
+    const stream = streams[0];
+    await testControlOnNode(stream);
+
+    if (!volumeControl.getPlatformCompatibility().getStreamDestination) return;
+
+    const oldDestination = stream.destinationId;
+    expect(oldDestination).toBeDefined();
+    const currentSink = status.sinks.find(sink => sink.id === oldDestination);
+    expect(currentSink).toBeDefined();
+
+    if (!volumeControl.getPlatformCompatibility().setStreamDestination) return;
+
+    const sinks = status.sinks;
+    const otherSinks = sinks.filter(sink => sink.id !== oldDestination);
+    expect(otherSinks.length).toBeGreaterThan(0); // Please have at least two sinks before running this test
+
+    const newDestination = otherSinks[0].id;
+    await volumeControl.setStreamDestination(stream.id, newDestination);
+    expect((await volumeControl.getStatus()).streams[0].destinationId).toBe(newDestination);
+
+    await volumeControl.setStreamDestination(stream.id, oldDestination);
+    expect((await volumeControl.getStatus()).streams[0].destinationId).toBe(oldDestination);
   });
 
   it('should have individual control on sink', async () => {

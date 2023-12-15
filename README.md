@@ -33,8 +33,10 @@ The compatibility of features depends on whether `amixer`, `wireplumber` or `pul
 | Stream volume features | No     | Yes         | Yes        |
 | Sink volume features   | No     | Yes         | Yes        |
 | Source volume features | No     | Yes         | Yes        |
+| Get stream destination | No     | No          | Yes        |
+| Set stream destination | No     | No          | Yes        |
 
-Priority: `wireplumber` (`wpctl`) > `pulseaudio` (`pactl`) > `amixer`
+Priority: `pulseaudio` (`pactl`) > `wireplumber` (`wpctl`) > `amixer`
 
 
 Volume features correspond to get/set volume and mute/unmute.
@@ -87,6 +89,9 @@ volumeControl.getStatus().then(async status => {
 
   // Increase the stream's volume by 10%
   await volumeControl.setNodeVolumeById(stream.id, volume + 10);
+  
+  // Set new destination for the stream
+  await volumeControl.setStreamDestination(stream.id, status.sinks[0].id);
 });
 ```
 
@@ -109,6 +114,11 @@ export type VsNode = {
   isDefault: boolean;
 } & VolumeInfo;
 
+export type VsStreamNode = VsNode & {
+  type: 'stream';
+  destinationId?: string;
+};
+
 export type SinkStatus = {
   sinks: VsNode[];
   defaultSink?: string;
@@ -120,7 +130,7 @@ export type SourceStatus = {
 };
 
 export type StreamStatus = {
-  streams: VsNode[];
+  streams: VsStreamNode[];
 };
 
 export type Status = SinkStatus & SourceStatus & StreamStatus;

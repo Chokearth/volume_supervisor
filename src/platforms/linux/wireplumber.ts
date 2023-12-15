@@ -1,5 +1,6 @@
-import { VsNode, VsNodeTypes, PlatformImplementation, Status, VolumeInfo } from '@/types';
+import { VsNode, VsNodeTypes, PlatformImplementation, Status, VolumeInfo, VsStreamNode } from '@/types';
 import { execCommand } from '@/utils/commands';
+import { throwCompatibilityError } from '@/utils/errors';
 
 const SUB_SECTION_TO_EXTRACT: {
   name: string;
@@ -39,7 +40,7 @@ function exportSinksOrSources(lines: string[], type: VsNodeTypes) {
 }
 
 function exportStreams(lines: string[]) {
-  const nodes: VsNode[] = [];
+  const nodes: VsStreamNode[] = [];
 
   for (const line of lines) {
     if (line.startsWith('        ')) continue;
@@ -170,6 +171,8 @@ export const linuxWireplumber: PlatformImplementation = {
     setStreamVolume: true,
     setSinkVolume: true,
     setSourceVolume: true,
+    getStreamDestination: false,
+    setStreamDestination: false,
   }),
   async getGlobalVolume() {
     return getNodeVolumeInfoById('@DEFAULT_AUDIO_SINK@').then((volumeInfo) => volumeInfo.volume);
@@ -187,4 +190,5 @@ export const linuxWireplumber: PlatformImplementation = {
   getNodeVolumeInfoById,
   setNodeVolumeById,
   setNodeMutedById,
+  setStreamDestination: throwCompatibilityError,
 };

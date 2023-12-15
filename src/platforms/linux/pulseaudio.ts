@@ -7,6 +7,7 @@ import {
   VolumeInfo,
   VsNode,
   VsNodeTypes,
+  VsStreamNode,
 } from '@/types';
 import { execCommand } from '@/utils/commands';
 
@@ -218,12 +219,13 @@ async function getStreamStatus(): Promise<StreamStatus> {
   if (!stdout) return { streams: [] };
 
   const obj = exportStatusOutput(stdout);
-  const streams: VsNode[] = Object.keys(obj).map((key) => {
+  const streams: VsStreamNode[] = Object.keys(obj).map((key) => {
     const properties = obj[key];
     const name = properties['application.name'];
     const volume = extractVolume(properties['Volume']);
     const muted = properties['Mute'] === 'yes';
     const id = key.split(' ').at(-1).substring(1);
+    const destination = properties['Sink'];
 
     return {
       type: 'stream',
@@ -232,6 +234,7 @@ async function getStreamStatus(): Promise<StreamStatus> {
       volume,
       muted,
       isDefault: false,
+      destinationId: destination,
     };
   });
 
@@ -278,6 +281,10 @@ async function getStatus(): Promise<Status> {
   };
 }
 
+async function setStreamDestination(streamId: string, destinationId: string) {
+  await execCommand('pactl', ['move-sink-input', streamId, destinationId]);
+}
+
 export const linuxPulseAudio: PlatformImplementation = {
   getPlatformCompatibility: () => ({
     status: true,
@@ -287,6 +294,8 @@ export const linuxPulseAudio: PlatformImplementation = {
     setStreamVolume: true,
     setSinkVolume: true,
     setSourceVolume: true,
+    getStreamDestination: true,
+    setStreamDestination: true,
   }),
   async getGlobalVolume() {
     return getTypeVolumeById('sink', DEFAULT_SINK_NAME);
@@ -322,4 +331,5 @@ export const linuxPulseAudio: PlatformImplementation = {
 
     await setTypeMuteById(type, id, muted);
   },
+  setStreamDestination,
 };

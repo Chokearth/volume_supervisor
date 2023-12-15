@@ -7,6 +7,7 @@ export type GetStatus = () => Promise<Status>;
 export type GetNodeVolumeInfoById = (id: string) => Promise<VolumeInfo>;
 export type SetNodeVolumeById = (id: string, volume: number) => Promise<void>;
 export type SetNodeMutedById = (id: string, muted: boolean) => Promise<void>;
+export type SetStreamDestination = (id: string, destinationId: string) => Promise<void>;
 
 export interface PlatformImplementation {
   /**
@@ -61,6 +62,13 @@ export interface PlatformImplementation {
    * @returns {Promise<void>} A promise that resolves when the mute state has been set.
    */
   setNodeMutedById: SetNodeMutedById;
+  /**
+   * Set the destination of a stream.
+   * @param {string} id The id of the stream.
+   * @param {string} destinationId The id of the destination sink.
+   * @returns {Promise<void>} A promise that resolves when the destination has been set.
+   */
+  setStreamDestination: SetStreamDestination;
 }
 
 export type PlatformCompatibility = {
@@ -71,6 +79,8 @@ export type PlatformCompatibility = {
   setStreamVolume: boolean;
   setSinkVolume: boolean;
   setSourceVolume: boolean;
+  getStreamDestination: boolean;
+  setStreamDestination: boolean;
 }
 
 export type VolumeInfo = {
@@ -87,6 +97,11 @@ export type VsNode = {
   isDefault: boolean;
 } & VolumeInfo;
 
+export type VsStreamNode = VsNode & {
+  type: 'stream';
+  destinationId?: string;
+};
+
 export type SinkStatus = {
   sinks: VsNode[];
   defaultSink?: string;
@@ -98,7 +113,7 @@ export type SourceStatus = {
 };
 
 export type StreamStatus = {
-  streams: VsNode[];
+  streams: VsStreamNode[];
 };
 
 export type Status = SinkStatus & SourceStatus & StreamStatus;

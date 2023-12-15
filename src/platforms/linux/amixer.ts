@@ -11,6 +11,8 @@ export const linuxAmixer: PlatformImplementation = {
     setStreamVolume: false,
     setSinkVolume: false,
     setSourceVolume: false,
+    getStreamDestination: false,
+    setStreamDestination: false,
   }),
   async getGlobalVolume() {
 
@@ -46,4 +48,5 @@ export const linuxAmixer: PlatformImplementation = {
   getNodeVolumeInfoById: throwCompatibilityError,
   setNodeVolumeById: throwCompatibilityError,
   setNodeMutedById: throwCompatibilityError,
+  setStreamDestination: throwCompatibilityError,
 };
