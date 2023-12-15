@@ -34,7 +34,7 @@ The compatibility of features depends on whether `amixer`, `wireplumber` or `pul
 | Sink volume features   | No     | Yes         | Yes        |
 | Source volume features | No     | Yes         | Yes        |
 | Get stream destination | No     | No          | Yes        |
-| Set stream destination | No     | No          | No         |
+| Set stream destination | No     | No          | Yes        |
 
 Priority: `pulseaudio` (`pactl`) > `wireplumber` (`wpctl`) > `amixer`
 
