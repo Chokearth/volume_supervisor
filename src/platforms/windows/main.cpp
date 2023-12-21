@@ -8,16 +8,20 @@
 #include <vector>
 #include <functional>
 #include <audiopolicy.h>
+#include <winver.h>
+#include <math.h>
 
 IMMDeviceEnumerator *deviceEnumerator = nullptr;
 IMMDevice *defaultDevice = nullptr;
+
+#define LPWSTR_FROM_WSTRING(lp, ws) LPWSTR lp = new WCHAR[ws.length() + 1]; std::copy(ws.begin(), ws.end(), lp); lp[ws.length()] = 0
 
 // Structures
 struct VsNode {
     LPWSTR id;
     LPWSTR name;
     int volume;
-    bool mute;
+    bool muted;
     bool isDefault;
 };
 
@@ -33,6 +37,11 @@ void printUsage(char *argv[]) {
     std::cout << "  getSinks - Get the sinks" << std::endl;
     std::cout << "  getSources - Get the sources" << std::endl;
     std::cout << "  getStreams - Get the streams" << std::endl;
+    std::cout << "  getVolumeById [id] - Get the volume of a device by its ID" << std::endl;
+    std::cout << "  setVolumeById [id] [volume] - Set the volume of a device by its ID, volume must be between 0 and 100"
+              << std::endl;
+    std::cout << "  isMutedById [id] - Check if a device by its ID is muted" << std::endl;
+    std::cout << "  setMuteById [id] [mute] - Set the mute of a device by its ID, mute must be 1 or 0" << std::endl;
 }
 
 void clearGlobal() {
@@ -47,6 +56,21 @@ void clearGlobal() {
     }
 }
 
+void clearVsNode(VsNode &node) { // TODO there is probably memory leaks
+//    delete node.id;
+//    delete node.name;
+}
+
+void clearVsNode(std::vector<VsNode> &nodes) {
+    UINT count = nodes.size();
+
+    for (UINT i = 0; i < count; i++) {
+        clearVsNode(nodes[i]);
+    }
+
+    delete &nodes;
+}
+
 void uninitialize() {
     clearGlobal();
     CoUninitialize();
@@ -57,7 +81,7 @@ void printVsNode(VsNode &node, bool last = true) {
     printf("  \"id\": \"%S\",\n", node.id);
     printf("  \"name\": \"%S\",\n", node.name);
     printf("  \"volume\": %d,\n", node.volume);
-    printf("  \"mute\": %s,\n", node.mute ? "true" : "false");
+    printf("  \"muted\": %s,\n", node.muted ? "true" : "false");
     printf("  \"isDefault\": %s\n", node.isDefault ? "true" : "false");
     printf("}%s\n", last ? "" : ",");
 }
@@ -153,6 +177,51 @@ PROPVARIANT getDeviceProperty(IMMDevice *device, const PROPERTYKEY &key) {
     return property;
 }
 
+LPWSTR getProcessName(DWORD processId) {
+    HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, processId);
+    if (hProcess) {
+        WCHAR processPath[MAX_PATH];
+        DWORD pathSize = sizeof(processPath) / sizeof(processPath[0]);
+
+        if (QueryFullProcessImageNameW(hProcess, 0, processPath, &pathSize)) {
+            // Extract the executable name from the full path
+            std::wstring fullPath(processPath);
+            size_t lastSlashPos = fullPath.find_last_of(L'\\');
+
+            if (lastSlashPos != std::wstring::npos && lastSlashPos + 1 < fullPath.length()) {
+                std::wstring executableNameW = fullPath.substr(lastSlashPos + 1);
+                LPWSTR_FROM_WSTRING(executableName, executableNameW);
+
+                // Get the product name from the executable
+                DWORD versionHandle = 0;
+                DWORD versionSize = GetFileVersionInfoSizeW(processPath, &versionHandle);
+                if (versionSize > 0) {
+                    std::vector<BYTE> versionData(versionSize);
+                    if (GetFileVersionInfoW(processPath, versionHandle, versionSize, versionData.data())) {
+                        LPWSTR productName = nullptr;
+                        UINT productNameSize = 0;
+
+                        if (VerQueryValueW(versionData.data(), L"\\StringFileInfo\\040904b0\\ProductName",
+                                           (LPVOID *) &productName, &productNameSize)) {
+                            if (productNameSize > 0) {
+                                return productName;
+                            }
+                        }
+                    }
+                }
+
+                return executableName;
+            }
+        }
+
+        CloseHandle(hProcess);
+    }
+
+    LPWSTR unknown = new WCHAR[8];
+    wcscpy_s(unknown, 8, L"Unknown");
+    return unknown;
+}
+
 // Mapper
 void forEachDevice(const std::function<bool(IMMDevice *)> &callback, EDataFlow dataFlow = eRender) {
     HRESULT hr;
@@ -216,7 +285,7 @@ int getVolume(IMMDevice *device) {
         return 1;
     }
 
-    return (int) (volume * 100);
+    return (int) round(volume * 100);
 }
 
 void setVolume(IMMDevice *device, int volume) {
@@ -324,7 +393,7 @@ void getVsNodeOfType(std::vector<VsNode> *nodes, EDataFlow dataFlow = eRender) {
         node.id = pwszID;
         node.name = property.pwszVal;
         node.volume = getVolume(device);
-        node.mute = isMuted(device);
+        node.muted = isMuted(device);
         node.isDefault = wcscmp(pwszID, defaultDeviceId) == 0;
         nodes->push_back(node);
 
@@ -377,34 +446,64 @@ void getStreams(std::vector<VsNode> *nodes) {
                 return false;
             }
 
-            LPWSTR pwszID = nullptr;
-            hr = sessionControl2->GetSessionInstanceIdentifier(&pwszID);
+            LPWSTR pwszIDBad = nullptr;
+            hr = sessionControl2->GetSessionInstanceIdentifier(&pwszIDBad);
             sessionControl2->Release();
             if (FAILED(hr)) {
                 std::cout << "Failed to get session instance identifier" << std::endl;
                 return false;
             }
 
+            std::wstring id(pwszIDBad);
+            size_t pos = 0;
+            while ((pos = id.find(L"\\", pos)) != std::wstring::npos) {
+                id.replace(pos, 1, L"\\\\");
+                pos += 2;
+            }
+            LPWSTR_FROM_WSTRING(pwszID, id);
+
+
             hr = sessionControl2->IsSystemSoundsSession();
             if (hr == S_OK) {
                 continue;
             }
 
-            LPWSTR displayName = nullptr;
-            hr = sessionControl->GetDisplayName(&displayName);
+            DWORD processId;
+            hr = sessionControl2->GetProcessId(&processId);
             if (FAILED(hr)) {
-                std::cout << "Failed to get display name" << std::endl;
+                std::cout << "Failed to get process ID" << std::endl;
                 return false;
             }
 
+            LPWSTR displayName = getProcessName(processId);
+
             float volume = 0;
             BOOL mute = false;
+
+            ISimpleAudioVolume *simpleAudioVolume = nullptr;
+            hr = sessionControl->QueryInterface(__uuidof(ISimpleAudioVolume), (void **) &simpleAudioVolume);
+            if (FAILED(hr)) {
+                std::cout << "Failed to get simple audio volume" << std::endl;
+                return false;
+            }
+
+            hr = simpleAudioVolume->GetMasterVolume(&volume);
+            if (FAILED(hr)) {
+                std::cout << "Failed to get master volume" << std::endl;
+                return false;
+            }
+            hr = simpleAudioVolume->GetMute(&mute);
+            if (FAILED(hr)) {
+                std::cout << "Failed to get mute" << std::endl;
+                return false;
+            }
+            simpleAudioVolume->Release();
 
             VsNode node;
             node.id = pwszID;
             node.name = displayName;
             node.volume = (int) (volume * 100);
-            node.mute = mute;
+            node.muted = mute;
             node.isDefault = false;
             nodes->push_back(node);
         }
@@ -413,6 +512,78 @@ void getStreams(std::vector<VsNode> *nodes) {
     };
 
     forEachDevice(fn, eRender);
+}
+
+int getVolumeById(LPWSTR id) {
+    HRESULT hr;
+
+    IMMDeviceEnumerator *deviceEnumerator = getDeviceEnumerator();
+    if (deviceEnumerator == nullptr) {
+        return 0;
+    }
+
+    IMMDevice *device = nullptr;
+    hr = deviceEnumerator->GetDevice(id, &device);
+    if (FAILED(hr)) {
+        std::cout << "Failed to get device" << std::endl;
+        return 0;
+    }
+
+    return getVolume(device);
+}
+
+void setVolumeById(LPWSTR id, int volume) {
+    HRESULT hr;
+
+    IMMDeviceEnumerator *deviceEnumerator = getDeviceEnumerator();
+    if (deviceEnumerator == nullptr) {
+        return;
+    }
+
+    IMMDevice *device = nullptr;
+    hr = deviceEnumerator->GetDevice(id, &device);
+    if (FAILED(hr)) {
+        std::cout << "Failed to get device" << std::endl;
+        return;
+    }
+
+    setVolume(device, volume);
+}
+
+bool isMutedById(LPWSTR id) {
+    HRESULT hr;
+
+    IMMDeviceEnumerator *deviceEnumerator = getDeviceEnumerator();
+    if (deviceEnumerator == nullptr) {
+        return false;
+    }
+
+    IMMDevice *device = nullptr;
+    hr = deviceEnumerator->GetDevice(id, &device);
+    if (FAILED(hr)) {
+        std::cout << "Failed to get device" << std::endl;
+        return false;
+    }
+
+    return isMuted(device);
+}
+
+void setMuteById(LPWSTR id, bool mute) {
+    HRESULT hr;
+
+    IMMDeviceEnumerator *deviceEnumerator = getDeviceEnumerator();
+    if (deviceEnumerator == nullptr) {
+        return;
+    }
+
+    IMMDevice *device = nullptr;
+    hr = deviceEnumerator->GetDevice(id, &device);
+    if (FAILED(hr)) {
+        std::cout << "Failed to get device" << std::endl;
+        return;
+    }
+
+    setMute(device, mute);
 }
 
 int main(int argc, char *argv[]) {
@@ -467,17 +638,81 @@ int main(int argc, char *argv[]) {
         std::vector<VsNode> *nodes = new std::vector<VsNode>();
         getVsNodeOfType(nodes, eRender);
         printVsNodeVector(*nodes);
-        delete nodes;
+        clearVsNode(*nodes);
     } else if (command == "getSources") {
         std::vector<VsNode> *nodes = new std::vector<VsNode>();
         getVsNodeOfType(nodes, eCapture);
         printVsNodeVector(*nodes);
-        delete nodes;
+        clearVsNode(*nodes);
     } else if (command == "getStreams") {
         std::vector<VsNode> *nodes = new std::vector<VsNode>();
         getStreams(nodes);
         printVsNodeVector(*nodes);
-        delete nodes;
+        clearVsNode(*nodes);
+    } else if (command == "getVolumeById") {
+        if (argc < 3) {
+            std::cout << "Missing ID argument" << std::endl;
+            printUsage(argv);
+            uninitialize();
+            return 1;
+        }
+
+        std::wstring idW = std::wstring(argv[2], argv[2] + strlen(argv[2]));
+        LPWSTR_FROM_WSTRING(id, idW);
+
+        std::cout << getVolumeById(id) << std::endl;
+    } else if (command == "setVolumeById") {
+        if (argc < 4) {
+            std::cout << "Missing ID and volume arguments" << std::endl;
+            printUsage(argv);
+            uninitialize();
+            return 1;
+        }
+
+        std::wstring idW = std::wstring(argv[2], argv[2] + strlen(argv[2]));
+        LPWSTR_FROM_WSTRING(id, idW);
+
+        int volume = std::stoi(argv[3]);
+        if (volume < 0 || volume > 100) {
+            std::cout << "Volume must be between 0 and 100" << std::endl;
+            printUsage(argv);
+            uninitialize();
+            return 1;
+        }
+
+        setVolumeById(id, volume);
+    } else if (command == "isMutedById") {
+        if (argc < 3) {
+            std::cout << "Missing ID argument" << std::endl;
+            printUsage(argv);
+            uninitialize();
+            return 1;
+        }
+
+        std::wstring idW = std::wstring(argv[2], argv[2] + strlen(argv[2]));
+        LPWSTR_FROM_WSTRING(id, idW);
+
+        std::cout << isMutedById(id) << std::endl;
+    } else if (command == "setMuteById") {
+        if (argc < 4) {
+            std::cout << "Missing ID and mute arguments" << std::endl;
+            printUsage(argv);
+            uninitialize();
+            return 1;
+        }
+
+        std::wstring idW = std::wstring(argv[2], argv[2] + strlen(argv[2]));
+        LPWSTR_FROM_WSTRING(id, idW);
+
+        std::string muteStr = argv[3];
+        if (muteStr != "1" && muteStr != "0") {
+            std::cout << "Mute must be 1 or 0" << std::endl;
+            printUsage(argv);
+            uninitialize();
+            return 1;
+        }
+
+        setMuteById(id, muteStr == "1");
     } else {
         std::cout << "Unknown command: " << command << std::endl;
         printUsage(argv);
