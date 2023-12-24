@@ -46,7 +46,7 @@ export const windows: PlatformImplementation = {
     return res.trim() === '1';
   },
   async setGlobalMuted(muted: boolean) {
-    await execVsCmd(['setGlobalMute', muted ? '1' : '0']);
+    await execVsCmd(['setGlobalMuted', muted ? '1' : '0']);
   },
   async getStatus() {
     const sinksStr = await execVsCmd(['getSinks']);

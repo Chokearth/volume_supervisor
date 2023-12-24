@@ -33,7 +33,7 @@ void printUsage(char *argv[]) {
     std::cout << "  getGlobalVolume - Get the global volume" << std::endl;
     std::cout << "  setGlobalVolume [volume] - Set the global volume, volume must be between 0 and 100" << std::endl;
     std::cout << "  isGlobalMuted - Check if the global volume is muted" << std::endl;
-    std::cout << "  setGlobalMute [mute] - Set the global mute, mute must be 1 or 0" << std::endl;
+    std::cout << "  setGlobalMuted [mute] - Set the global mute, mute must be 1 or 0" << std::endl;
     std::cout << "  getSinks - Get the sinks" << std::endl;
     std::cout << "  getSources - Get the sources" << std::endl;
     std::cout << "  getStreams - Get the streams" << std::endl;
@@ -95,6 +95,34 @@ void printVsNodeVector(std::vector<VsNode> &nodes) {
         printVsNode(nodes[i], i == count - 1);
     }
     std::cout << "]" << std::endl;
+}
+
+ISimpleAudioVolume *toSAV(IAudioSessionControl2 *sessionControl) {
+    HRESULT hr;
+
+    ISimpleAudioVolume *simpleAudioVolume = nullptr;
+    hr = sessionControl->QueryInterface(__uuidof(ISimpleAudioVolume), (void **) &simpleAudioVolume);
+    if (FAILED(hr)) {
+        std::cerr << "Failed to get simple audio volume from session control" << std::endl;
+        return nullptr;
+    }
+
+
+    return simpleAudioVolume;
+}
+
+IAudioEndpointVolume *toAEV(IMMDevice *device) {
+    HRESULT hr;
+
+    IAudioEndpointVolume *audioEndpointVolume = nullptr;
+    hr = device->Activate(__uuidof(IAudioEndpointVolume), CLSCTX_INPROC_SERVER, nullptr,
+                          (LPVOID *) &audioEndpointVolume);
+    if (FAILED(hr)) {
+        std::cerr << "Failed to activate audio endpoint volume" << std::endl;
+        return nullptr;
+    }
+
+    return audioEndpointVolume;
 }
 
 // Get functions
@@ -317,193 +345,7 @@ void forEachSession(const std::function<bool(IAudioSessionControl2 *)> &callback
     forEachDevice(fn, eRender);
 }
 
-// Device functions
-int getVolume(IMMDevice *device) {
-    if (device == nullptr) return 0;
-    HRESULT hr;
-
-    // Activate an audio interface
-    IAudioEndpointVolume *endpointVolume = nullptr;
-    hr = device->Activate(__uuidof(IAudioEndpointVolume), CLSCTX_INPROC_SERVER, nullptr,
-                          (LPVOID *) &endpointVolume);
-    if (FAILED(hr)) {
-        std::cerr << "Failed to activate audio endpoint" << std::endl;
-        return 1;
-    }
-
-    // Get the current volume
-    float volume;
-    hr = endpointVolume->GetMasterVolumeLevelScalar(&volume);
-    endpointVolume->Release();
-    if (FAILED(hr)) {
-        std::cerr << "Failed to get master volume level" << std::endl;
-        return 1;
-    }
-
-    return (int) round(volume * 100);
-}
-
-void setVolume(IMMDevice *device, int volume) {
-    if (device == nullptr) return;
-    HRESULT hr;
-
-    // Activate an audio interface
-    IAudioEndpointVolume *endpointVolume = nullptr;
-    hr = device->Activate(__uuidof(IAudioEndpointVolume), CLSCTX_INPROC_SERVER, nullptr,
-                          (LPVOID *) &endpointVolume);
-    if (FAILED(hr)) {
-        std::cerr << "Failed to activate audio endpoint" << std::endl;
-        return;
-    }
-
-    // Set the volume
-    hr = endpointVolume->SetMasterVolumeLevelScalar((float) volume / 100, nullptr);
-    endpointVolume->Release();
-    if (FAILED(hr)) {
-        std::cerr << "Failed to set master volume level" << std::endl;
-        return;
-    }
-}
-
-bool isMuted(IMMDevice *device) {
-    if (device == nullptr) return false;
-    HRESULT hr;
-
-    // Activate an audio interface
-    IAudioEndpointVolume *endpointVolume = nullptr;
-    hr = device->Activate(__uuidof(IAudioEndpointVolume), CLSCTX_INPROC_SERVER, nullptr,
-                          (LPVOID *) &endpointVolume);
-    if (FAILED(hr)) {
-        std::cerr << "Failed to activate audio endpoint" << std::endl;
-        return false;
-    }
-
-    // Get the current mute state
-    BOOL mute;
-    hr = endpointVolume->GetMute(&mute);
-    endpointVolume->Release();
-    if (FAILED(hr)) {
-        std::cerr << "Failed to get mute state" << std::endl;
-        return false;
-    }
-
-    return mute;
-}
-
-void setMute(IMMDevice *device, bool mute) {
-    if (device == nullptr) return;
-    HRESULT hr;
-
-    // Activate an audio interface
-    IAudioEndpointVolume *endpointVolume = nullptr;
-    hr = device->Activate(__uuidof(IAudioEndpointVolume), CLSCTX_INPROC_SERVER, nullptr,
-                          (LPVOID *) &endpointVolume);
-    if (FAILED(hr)) {
-        std::cerr << "Failed to activate audio endpoint" << std::endl;
-        return;
-    }
-
-    // Set the mute state
-    hr = endpointVolume->SetMute(mute, nullptr);
-    endpointVolume->Release();
-    if (FAILED(hr)) {
-        std::cerr << "Failed to set mute state" << std::endl;
-        return;
-    }
-}
-
-// Session functions
-ISimpleAudioVolume *getSimpleAudioVolume(IAudioSessionControl2 *sessionControl) {
-    HRESULT hr;
-
-    ISimpleAudioVolume *simpleAudioVolume = nullptr;
-    hr = sessionControl->QueryInterface(__uuidof(ISimpleAudioVolume), (void **) &simpleAudioVolume);
-    if (FAILED(hr)) {
-        std::cerr << "Failed to get simple audio volume" << std::endl;
-        return nullptr;
-    }
-
-    return simpleAudioVolume;
-}
-
-int getSessionVolume(IAudioSessionControl2 *sessionControl) {
-    if (sessionControl == nullptr) return 0;
-    HRESULT hr;
-
-    ISimpleAudioVolume *simpleAudioVolume = getSimpleAudioVolume(sessionControl);
-    if (simpleAudioVolume == nullptr) {
-        return 0;
-    }
-
-    // Get the current volume
-    float volume;
-    hr = simpleAudioVolume->GetMasterVolume(&volume);
-    simpleAudioVolume->Release();
-    if (FAILED(hr)) {
-        std::cerr << "Failed to get master volume level" << std::endl;
-        return 0;
-    }
-
-    return (int) round(volume * 100);
-}
-
-void setSessionVolume(IAudioSessionControl2 *sessionControl, int volume) {
-    if (sessionControl == nullptr) return;
-    HRESULT hr;
-
-    ISimpleAudioVolume *simpleAudioVolume = getSimpleAudioVolume(sessionControl);
-    if (simpleAudioVolume == nullptr) {
-        return;
-    }
-
-    // Set the volume
-    hr = simpleAudioVolume->SetMasterVolume((float) volume / 100, nullptr);
-    simpleAudioVolume->Release();
-    if (FAILED(hr)) {
-        std::cerr << "Failed to set master volume level" << std::endl;
-        return;
-    }
-}
-
-bool isSessionMuted(IAudioSessionControl2 *sessionControl) {
-    if (sessionControl == nullptr) return false;
-    HRESULT hr;
-
-    ISimpleAudioVolume *simpleAudioVolume = getSimpleAudioVolume(sessionControl);
-    if (simpleAudioVolume == nullptr) {
-        return false;
-    }
-
-    // Get the current mute state
-    BOOL mute;
-    hr = simpleAudioVolume->GetMute(&mute);
-    simpleAudioVolume->Release();
-    if (FAILED(hr)) {
-        std::cerr << "Failed to get mute state" << std::endl;
-        return false;
-    }
-
-    return mute;
-}
-
-void setSessionMute(IAudioSessionControl2 *sessionControl, bool mute) {
-    if (sessionControl == nullptr) return;
-    HRESULT hr;
-
-    ISimpleAudioVolume *simpleAudioVolume = getSimpleAudioVolume(sessionControl);
-    if (simpleAudioVolume == nullptr) {
-        return;
-    }
-
-    // Set the mute state
-    hr = simpleAudioVolume->SetMute(mute, nullptr);
-    simpleAudioVolume->Release();
-    if (FAILED(hr)) {
-        std::cerr << "Failed to set mute state" << std::endl;
-        return;
-    }
-}
-
+// Complex getter functions
 IAudioSessionControl2 *getSessionById(LPWSTR id) {
     IAudioSessionControl2 *result = nullptr;
 
@@ -539,21 +381,161 @@ IAudioSessionControl2 *getSessionById(LPWSTR id) {
     return result;
 }
 
+// AudioEndpointVolume functions
+int getVolume(IAudioEndpointVolume *audioEndpointVolume) {
+    if (audioEndpointVolume == nullptr) return 0;
+    HRESULT hr;
+
+    // Get the current volume
+    float volume;
+    hr = audioEndpointVolume->GetMasterVolumeLevelScalar(&volume);
+    if (FAILED(hr)) {
+        std::cerr << "Failed to get master volume level" << std::endl;
+        return 0;
+    }
+
+    return (int) round(volume * 100);
+}
+
+void setVolume(IAudioEndpointVolume *audioEndpointVolume, int volume) {
+    if (audioEndpointVolume == nullptr) return;
+    HRESULT hr;
+
+    // Set the volume
+    hr = audioEndpointVolume->SetMasterVolumeLevelScalar((float) volume / 100, nullptr);
+    if (FAILED(hr)) {
+        std::cerr << "Failed to set master volume level" << std::endl;
+        return;
+    }
+}
+
+bool isMuted(IAudioEndpointVolume *audioEndpointVolume) {
+    if (audioEndpointVolume == nullptr) return false;
+    HRESULT hr;
+
+    // Get the current mute state
+    BOOL mute;
+    hr = audioEndpointVolume->GetMute(&mute);
+    if (FAILED(hr)) {
+        std::cerr << "Failed to get mute state" << std::endl;
+        return false;
+    }
+
+    return mute;
+}
+
+void setMuted(IAudioEndpointVolume *audioEndpointVolume, bool mute) {
+    if (audioEndpointVolume == nullptr) return;
+    HRESULT hr;
+
+    // Set the mute state
+    hr = audioEndpointVolume->SetMute(mute, nullptr);
+    if (FAILED(hr)) {
+        std::cerr << "Failed to set mute state" << std::endl;
+        return;
+    }
+}
+
+IAudioEndpointVolume *getAEVById(LPWSTR id) {
+    IMMDeviceEnumerator *deviceEnumerator = getDeviceEnumerator();
+    if (deviceEnumerator == nullptr) {
+        return nullptr;
+    }
+
+    IMMDevice *device = nullptr;
+    HRESULT hr = deviceEnumerator->GetDevice(id, &device);
+    if (FAILED(hr)) {
+        return nullptr;
+    }
+
+    IAudioEndpointVolume *audioEndpointVolume = toAEV(device);
+    device->Release();
+
+    return audioEndpointVolume;
+}
+
+// SimpleAudioVolume functions
+int getVolume(ISimpleAudioVolume *simpleAudioVolume) {
+    if (simpleAudioVolume == nullptr) return 0;
+    HRESULT hr;
+
+    // Get the current volume
+    float volume;
+    hr = simpleAudioVolume->GetMasterVolume(&volume);
+    if (FAILED(hr)) {
+        std::cerr << "Failed to get master volume level" << std::endl;
+        return 0;
+    }
+
+    return (int) round(volume * 100);
+}
+
+void setVolume(ISimpleAudioVolume *simpleAudioVolume, int volume) {
+    if (simpleAudioVolume == nullptr) return;
+    HRESULT hr;
+
+    // Set the volume
+    hr = simpleAudioVolume->SetMasterVolume((float) volume / 100, nullptr);
+    if (FAILED(hr)) {
+        std::cerr << "Failed to set master volume level" << std::endl;
+        return;
+    }
+}
+
+bool isMuted(ISimpleAudioVolume *simpleAudioVolume) {
+    if (simpleAudioVolume == nullptr) return false;
+    HRESULT hr;
+
+    // Get the current mute state
+    BOOL mute;
+    hr = simpleAudioVolume->GetMute(&mute);
+    if (FAILED(hr)) {
+        std::cerr << "Failed to get mute state" << std::endl;
+        return false;
+    }
+
+    return mute;
+}
+
+void setMuted(ISimpleAudioVolume *simpleAudioVolume, bool mute) {
+    if (simpleAudioVolume == nullptr) return;
+    HRESULT hr;
+
+    // Set the mute state
+    hr = simpleAudioVolume->SetMute(mute, nullptr);
+    if (FAILED(hr)) {
+        std::cerr << "Failed to set mute state" << std::endl;
+        return;
+    }
+}
+
+ISimpleAudioVolume *getSAVById(LPWSTR id) {
+    IAudioSessionControl2 *sessionControl2 = getSessionById(id);
+    if (sessionControl2 == nullptr) {
+        return nullptr;
+    }
+
+    ISimpleAudioVolume *simpleAudioVolume = toSAV(sessionControl2);
+    sessionControl2->Release();
+
+    return simpleAudioVolume;
+}
+
 // Default device functions
 int getGlobalVolume() {
-    return getVolume(getDefaultDevice());;
+    return getVolume(toAEV(getDefaultDevice()));
 }
 
 void setGlobalVolume(int volume) {
-    setVolume(getDefaultDevice(), volume);
+    setVolume(toAEV(getDefaultDevice()), volume);
 }
 
 bool isGlobalMuted() {
-    return isMuted(getDefaultDevice());
+    return isMuted(toAEV(getDefaultDevice()));
 }
 
-void setGlobalMute(bool mute) {
-    setMute(getDefaultDevice(), mute);
+void setGlobalMuted(bool mute) {
+    setMuted(toAEV(getDefaultDevice()), mute);
 }
 
 // Get VsNode functions
@@ -571,13 +553,16 @@ void getVsNodeOfType(std::vector<VsNode> *nodes, EDataFlow dataFlow = eRender) {
             return false;
         }
 
+        IAudioEndpointVolume *audioEndpointVolume = toAEV(device);
+
         VsNode node;
         node.id = pwszID;
         node.name = property.pwszVal;
-        node.volume = getVolume(device);
-        node.muted = isMuted(device);
+        node.volume = getVolume(audioEndpointVolume);
+        node.muted = isMuted(audioEndpointVolume);
         node.isDefault = wcscmp(pwszID, defaultDeviceId) == 0;
         nodes->push_back(node);
+        audioEndpointVolume->Release();
 
         return true;
     };
@@ -619,36 +604,16 @@ void getStreams(std::vector<VsNode> *nodes) {
         }
 
         LPWSTR displayName = getProcessName(processId);
-
-        float volume = 0;
-        BOOL mute = false;
-
-        ISimpleAudioVolume *simpleAudioVolume = nullptr;
-        hr = sessionControl2->QueryInterface(__uuidof(ISimpleAudioVolume), (void **) &simpleAudioVolume);
-        if (FAILED(hr)) {
-            std::cerr << "Failed to get simple audio volume" << std::endl;
-            return false;
-        }
-
-        hr = simpleAudioVolume->GetMasterVolume(&volume);
-        if (FAILED(hr)) {
-            std::cerr << "Failed to get master volume" << std::endl;
-            return false;
-        }
-        hr = simpleAudioVolume->GetMute(&mute);
-        if (FAILED(hr)) {
-            std::cerr << "Failed to get mute" << std::endl;
-            return false;
-        }
-        simpleAudioVolume->Release();
+        ISimpleAudioVolume *simpleAudioVolume = toSAV(sessionControl2);
 
         VsNode node;
         node.id = pwszID;
         node.name = displayName;
-        node.volume = (int) (volume * 100);
-        node.muted = mute;
+        node.volume = getVolume(simpleAudioVolume);
+        node.muted = isMuted(simpleAudioVolume);
         node.isDefault = false;
         nodes->push_back(node);
+        simpleAudioVolume->Release();
 
         return true;
     };
@@ -657,98 +622,77 @@ void getStreams(std::vector<VsNode> *nodes) {
 }
 
 int getVolumeById(LPWSTR id) {
-    HRESULT hr;
-
-    IMMDeviceEnumerator *deviceEnumerator = getDeviceEnumerator();
-    if (deviceEnumerator == nullptr) {
-        return 0;
+    IAudioEndpointVolume *audioEndpointVolume = getAEVById(id);
+    if (audioEndpointVolume != nullptr) {
+        int volume = getVolume(audioEndpointVolume);
+        audioEndpointVolume->Release();
+        return volume;
     }
 
-    IMMDevice *device = nullptr;
-    hr = deviceEnumerator->GetDevice(id, &device);
-    if (FAILED(hr)) {
-
-        IAudioSessionControl2 *sessionControl2 = getSessionById(id);
-        if (sessionControl2 == nullptr) {
-            std::cerr << "Failed to get device/session" << std::endl;
-            return 0;
-        }
-
-        return getSessionVolume(sessionControl2);
+    ISimpleAudioVolume *simpleAudioVolume = getSAVById(id);
+    if (simpleAudioVolume != nullptr) {
+        int volume = getVolume(simpleAudioVolume);
+        simpleAudioVolume->Release();
+        return volume;
     }
 
-    return getVolume(device);
+    std::cerr << "Failed to get volume by ID" << std::endl;
+    return 0;
 }
 
 void setVolumeById(LPWSTR id, int volume) {
-    HRESULT hr;
-
-    IMMDeviceEnumerator *deviceEnumerator = getDeviceEnumerator();
-    if (deviceEnumerator == nullptr) {
+    IAudioEndpointVolume *audioEndpointVolume = getAEVById(id);
+    if (audioEndpointVolume != nullptr) {
+        setVolume(audioEndpointVolume, volume);
+        audioEndpointVolume->Release();
         return;
     }
 
-    IMMDevice *device = nullptr;
-    hr = deviceEnumerator->GetDevice(id, &device);
-    if (FAILED(hr)) {
-        IAudioSessionControl2 *sessionControl2 = getSessionById(id);
-        if (sessionControl2 == nullptr) {
-            std::cerr << "Failed to get device/session" << std::endl;
-            return;
-        }
-
-        setSessionVolume(sessionControl2, volume);
+    ISimpleAudioVolume *simpleAudioVolume = getSAVById(id);
+    if (simpleAudioVolume != nullptr) {
+        setVolume(simpleAudioVolume, volume);
+        simpleAudioVolume->Release();
         return;
     }
 
-    setVolume(device, volume);
+    std::cerr << "Failed to set volume by ID" << std::endl;
 }
 
 bool isMutedById(LPWSTR id) {
-    HRESULT hr;
-
-    IMMDeviceEnumerator *deviceEnumerator = getDeviceEnumerator();
-    if (deviceEnumerator == nullptr) {
-        return false;
+    IAudioEndpointVolume *audioEndpointVolume = getAEVById(id);
+    if (audioEndpointVolume != nullptr) {
+        bool muted = isMuted(audioEndpointVolume);
+        audioEndpointVolume->Release();
+        return muted;
     }
 
-    IMMDevice *device = nullptr;
-    hr = deviceEnumerator->GetDevice(id, &device);
-    if (FAILED(hr)) {
-        IAudioSessionControl2 *sessionControl2 = getSessionById(id);
-        if (sessionControl2 == nullptr) {
-            std::cerr << "Failed to get device/session" << std::endl;
-            return false;
-        }
-
-        return isSessionMuted(sessionControl2);
+    ISimpleAudioVolume *simpleAudioVolume = getSAVById(id);
+    if (simpleAudioVolume != nullptr) {
+        bool muted = isMuted(simpleAudioVolume);
+        simpleAudioVolume->Release();
+        return muted;
     }
 
-    return isMuted(device);
+    std::cerr << "Failed to get mute state by ID" << std::endl;
+    return false;
 }
 
 void setMutedById(LPWSTR id, bool mute) {
-    HRESULT hr;
-
-    IMMDeviceEnumerator *deviceEnumerator = getDeviceEnumerator();
-    if (deviceEnumerator == nullptr) {
+    IAudioEndpointVolume *audioEndpointVolume = getAEVById(id);
+    if (audioEndpointVolume != nullptr) {
+        setMuted(audioEndpointVolume, mute);
+        audioEndpointVolume->Release();
         return;
     }
 
-    IMMDevice *device = nullptr;
-    hr = deviceEnumerator->GetDevice(id, &device);
-    if (FAILED(hr)) {
-        IAudioSessionControl2 *sessionControl2 = getSessionById(id);
-        if (sessionControl2 == nullptr) {
-            std::cerr << "Failed to get device/session" << std::endl;
-            return;
-        }
-
-        setSessionMute(sessionControl2, mute);
+    ISimpleAudioVolume *simpleAudioVolume = getSAVById(id);
+    if (simpleAudioVolume != nullptr) {
+        setMuted(simpleAudioVolume, mute);
+        simpleAudioVolume->Release();
         return;
     }
 
-    setMute(device, mute);
+    std::cerr << "Failed to set mute state by ID" << std::endl;
 }
 
 int main(int argc, char *argv[]) {
@@ -782,7 +726,7 @@ int main(int argc, char *argv[]) {
         setGlobalVolume(volume);
     } else if (command == "isGlobalMuted") {
         std::cout << isGlobalMuted() << std::endl;
-    } else if (command == "setGlobalMute") {
+    } else if (command == "setGlobalMuted") {
         if (argc < 3) {
             std::cout << "Missing mute argument" << std::endl;
             printUsage(argv);
@@ -798,7 +742,7 @@ int main(int argc, char *argv[]) {
             return 1;
         }
 
-        setGlobalMute(muteStr == "1");
+        setGlobalMuted(muteStr == "1");
     } else if (command == "getSinks") {
         std::vector<VsNode> *nodes = new std::vector<VsNode>();
         getVsNodeOfType(nodes, eRender);
