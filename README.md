@@ -28,13 +28,13 @@ Here is a table that outlines the compatibility:
 | Feature                | Amixer | Wireplumber | Pulseaudio | Windows |
 |------------------------|--------|-------------|------------|---------|
 | Global volume features | Yes    | Yes         | Yes        | Yes     |
-| Audio status           | No     | Yes         | Yes        | No      |
-| List streams           | No     | Yes         | Yes        | No      |
-| List sinks             | No     | Yes         | Yes        | No      |
-| List sources           | No     | Yes         | Yes        | No      |
-| Stream volume features | No     | Yes         | Yes        | No      |
-| Sink volume features   | No     | Yes         | Yes        | No      |
-| Source volume features | No     | Yes         | Yes        | No      |
+| Audio status           | No     | Yes         | Yes        | Yes     |
+| List streams           | No     | Yes         | Yes        | Yes     |
+| List sinks             | No     | Yes         | Yes        | Yes     |
+| List sources           | No     | Yes         | Yes        | Yes     |
+| Stream volume features | No     | Yes         | Yes        | Yes     |
+| Sink volume features   | No     | Yes         | Yes        | Yes     |
+| Source volume features | No     | Yes         | Yes        | Yes     |
 | Get stream destination | No     | No          | Yes        | No      |
 | Set stream destination | No     | No          | Yes        | No      |
 

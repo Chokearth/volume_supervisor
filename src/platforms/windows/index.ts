@@ -10,7 +10,11 @@ function execVsCmd(args: string[]) {
   return execCommand(
     ToElectronPath(join(__dirname, EXE_NAME)),
     args,
-  );
+  ).catch((err) => {
+    console.error(`Failed to execute vsExec.exe with args: ${args.join(' ')}`);
+    console.error(err);
+    throw new Error('Failed to execute vsExec.exe');
+  });
 }
 
 export const windows: PlatformImplementation = {
@@ -19,7 +23,7 @@ export const windows: PlatformImplementation = {
     listStreams: true,
     listSinks: true,
     listSources: true,
-    setStreamVolume: false,
+    setStreamVolume: true,
     setSinkVolume: true,
     setSourceVolume: true,
     getStreamDestination: false,
@@ -68,14 +72,27 @@ export const windows: PlatformImplementation = {
       throw new Error('Failed to get status');
     }
   },
-  getNodeVolumeInfoById: throwCompatibilityError,
+  async getNodeVolumeInfoById(id: string) {
+    const volumeStr = await execVsCmd(['getVolumeById', id]);
+    const volume = parseInt(volumeStr.trim());
+    if (isNaN(volume) || volume === -1) throw new Error('Failed to get volume');
+
+    const mutedStr = await execVsCmd(['isMutedById', id]);
+    const muted = mutedStr.trim() === '1';
+    if (mutedStr.trim() !== '0' && !muted) throw new Error('Failed to get muted');
+
+    return {
+      volume,
+      muted,
+    };
+  },
   async setNodeVolumeById(id: string, volume: number) {
     if (volume < 0 || volume > 100) throw new Error('Volume must be between 0 and 100');
 
     await execVsCmd(['setVolumeById', id, volume.toString()]);
   },
-  async setNodeMutedById(id: string) {
-    await execVsCmd(['setMutedById', id, '1']);
+  async setNodeMutedById(id: string, muted: boolean) {
+    await execVsCmd(['setMutedById', id, muted ? '1' : '0']);
   },
   setStreamDestination: throwCompatibilityError,
 };
