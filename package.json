@@ -1,6 +1,6 @@
 {
   "name": "volume_supervisor",
-  "version": "0.3.0",
+  "version": "1.0.0",
   "description": "Library to control system and app volume",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -16,11 +16,16 @@
   "keywords": [
     "volume",
     "linux",
+    "windows",
     "audio",
     "wireplumber",
     "pulseaudio",
     "amixer",
-    "alsa"
+    "alsa",
+    "mixer",
+    "volume control",
+    "volume supervisor",
+    "volume mixer"
   ],
   "author": "Chokearth",
   "license": "MIT",

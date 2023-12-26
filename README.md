@@ -17,27 +17,28 @@ $ pnpm add volume_supervisor
 
 ## Compatibility
 
-Currently, Volume Supervisor only supports Linux. However, support for Windows is planned for future releases. If you are a Mac user and would like to contribute to this project, feel free to fork the repository and make a merge request.
+Currently, Volume Supervisor only fully supports Linux and basic function on windows. The windows support is planned to be expended in the near future.
+If you are a Mac user and would like to contribute to this project, feel free to fork the repository and make a merge request.
 
-### Linux Compatibility
+### Functions Compatibility
 
-The compatibility of features depends on whether `amixer`, `wireplumber` or `pulseaudio` is installed on your Linux system. Here is a table that outlines the compatibility:
+The compatibility of features on linux depends on whether `amixer`, `wireplumber` or `pulseaudio` is installed on your Linux system.
+Here is a table that outlines the compatibility:
 
-| Feature                | amixer | wireplumber | pulseaudio |
-|------------------------|--------|-------------|------------|
-| Global volume features | Yes    | Yes         | Yes        |
-| Audio status           | No     | Yes         | Yes        |
-| List streams           | No     | Yes         | Yes        |
-| List sinks             | No     | Yes         | Yes        |
-| List sources           | No     | Yes         | Yes        |
-| Stream volume features | No     | Yes         | Yes        |
-| Sink volume features   | No     | Yes         | Yes        |
-| Source volume features | No     | Yes         | Yes        |
-| Get stream destination | No     | No          | Yes        |
-| Set stream destination | No     | No          | Yes        |
+| Feature                | Amixer | Wireplumber | Pulseaudio | Windows |
+|------------------------|--------|-------------|------------|---------|
+| Global volume features | Yes    | Yes         | Yes        | Yes     |
+| Audio status           | No     | Yes         | Yes        | Yes     |
+| List streams           | No     | Yes         | Yes        | Yes     |
+| List sinks             | No     | Yes         | Yes        | Yes     |
+| List sources           | No     | Yes         | Yes        | Yes     |
+| Stream volume features | No     | Yes         | Yes        | Yes     |
+| Sink volume features   | No     | Yes         | Yes        | Yes     |
+| Source volume features | No     | Yes         | Yes        | Yes     |
+| Get stream destination | No     | No          | Yes        | Yes     |
+| Set stream destination | No     | No          | Yes        | No      |
 
-Priority: `pulseaudio` (`pactl`) > `wireplumber` (`wpctl`) > `amixer`
-
+Priority for linux: `pulseaudio` (`pactl`) > `wireplumber` (`wpctl`) > `amixer`
 
 Volume features correspond to get/set volume and mute/unmute.
 
