@@ -9,7 +9,7 @@
 #include <functional>
 #include <audiopolicy.h>
 #include <winver.h>
-#include <math.h>
+#include <cmath>
 
 IMMDeviceEnumerator *deviceEnumerator = nullptr;
 IMMDevice *defaultDevice = nullptr;
@@ -23,6 +23,7 @@ struct VsNode {
     int volume;
     bool muted;
     bool isDefault;
+    LPWSTR destinationId;
 };
 
 // Utils
@@ -83,7 +84,12 @@ void printVsNode(VsNode &node, bool last = true) {
     printf("  \"name\": \"%S\",\n", node.name);
     printf("  \"volume\": %d,\n", node.volume);
     printf("  \"muted\": %s,\n", node.muted ? "true" : "false");
-    printf("  \"isDefault\": %s\n", node.isDefault ? "true" : "false");
+    printf("  \"isDefault\": %s%s\n", node.isDefault ? "true" : "false", node.destinationId != nullptr ? "," : "");
+
+    if (node.destinationId != nullptr) {
+        printf("  \"destinationId\": \"%S\"\n", node.destinationId);
+    }
+
     printf("}%s\n", last ? "" : ",");
 }
 
@@ -291,7 +297,7 @@ void forEachDevice(const std::function<bool(IMMDevice *)> &callback, EDataFlow d
     deviceCollection->Release();
 }
 
-void forEachSession(const std::function<bool(IAudioSessionControl2 *)> &callback) {
+void forEachSession(const std::function<bool(IAudioSessionControl2 *, IMMDevice *device)> &callback) {
     auto fn = [&callback](IMMDevice *device) -> bool {
         HRESULT hr;
 
@@ -334,7 +340,7 @@ void forEachSession(const std::function<bool(IAudioSessionControl2 *)> &callback
                 return false;
             }
 
-            if (!callback(sessionControl2)) {
+            if (!callback(sessionControl2, device)) {
                 return false;
             }
         }
@@ -349,7 +355,7 @@ void forEachSession(const std::function<bool(IAudioSessionControl2 *)> &callback
 IAudioSessionControl2 *getSessionById(LPWSTR id) {
     IAudioSessionControl2 *result = nullptr;
 
-    auto fn = [&result, id](IAudioSessionControl2 *sessionControl2) -> bool {
+    auto fn = [&result, id](IAudioSessionControl2 *sessionControl2, IMMDevice *device) -> bool {
         HRESULT hr;
 
         LPWSTR pwszIDBad = nullptr;
@@ -561,6 +567,7 @@ void getVsNodeOfType(std::vector<VsNode> *nodes, EDataFlow dataFlow = eRender) {
         node.volume = getVolume(audioEndpointVolume);
         node.muted = isMuted(audioEndpointVolume);
         node.isDefault = wcscmp(pwszID, defaultDeviceId) == 0;
+        node.destinationId = nullptr;
         nodes->push_back(node);
         audioEndpointVolume->Release();
 
@@ -571,7 +578,7 @@ void getVsNodeOfType(std::vector<VsNode> *nodes, EDataFlow dataFlow = eRender) {
 }
 
 void getStreams(std::vector<VsNode> *nodes) {
-    auto fn = [&nodes](IAudioSessionControl2 *sessionControl2) -> bool {
+    auto fn = [&nodes](IAudioSessionControl2 *sessionControl2, IMMDevice *device) -> bool {
         HRESULT hr;
 
         LPWSTR pwszIDBad = nullptr;
@@ -606,12 +613,20 @@ void getStreams(std::vector<VsNode> *nodes) {
         LPWSTR displayName = getProcessName(processId);
         ISimpleAudioVolume *simpleAudioVolume = toSAV(sessionControl2);
 
+        LPWSTR deviceID = nullptr;
+        hr = device->GetId(&deviceID);
+        if (FAILED(hr)) {
+            std::cerr << "Failed to get device ID" << std::endl;
+            return false;
+        }
+
         VsNode node;
         node.id = pwszID;
         node.name = displayName;
         node.volume = getVolume(simpleAudioVolume);
         node.muted = isMuted(simpleAudioVolume);
         node.isDefault = false;
+        node.destinationId = deviceID;
         nodes->push_back(node);
         simpleAudioVolume->Release();
 

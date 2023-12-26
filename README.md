@@ -35,7 +35,7 @@ Here is a table that outlines the compatibility:
 | Stream volume features | No     | Yes         | Yes        | Yes     |
 | Sink volume features   | No     | Yes         | Yes        | Yes     |
 | Source volume features | No     | Yes         | Yes        | Yes     |
-| Get stream destination | No     | No          | Yes        | No      |
+| Get stream destination | No     | No          | Yes        | Yes     |
 | Set stream destination | No     | No          | Yes        | No      |
 
 Priority for linux: `pulseaudio` (`pactl`) > `wireplumber` (`wpctl`) > `amixer`

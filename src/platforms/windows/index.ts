@@ -26,7 +26,7 @@ export const windows: PlatformImplementation = {
     setStreamVolume: true,
     setSinkVolume: true,
     setSourceVolume: true,
-    getStreamDestination: false,
+    getStreamDestination: true,
     setStreamDestination: false,
   }),
   async getGlobalVolume() {
